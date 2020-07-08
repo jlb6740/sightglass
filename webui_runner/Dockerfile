@@ -5,7 +5,12 @@ RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 	apt-utils build-essential gpg-agent \
 	curl ca-certificates wget software-properties-common \
-	psmisc lsof git cmake nano
+	psmisc lsof git nano zlib1g-dev libedit-dev
+
+RUN wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+RUN apt-get update
+RUN apt-get install --yes cmake
 
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
