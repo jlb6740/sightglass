@@ -7,9 +7,7 @@ source ${SIGHTGLASS_ROOT}/config.inc
 
 #Copy shootout
 mkdir -p ${SCRIPT_LOC}/benchmark; cd ${SCRIPT_LOC}/benchmark
-cp -r ${SIGHTGLASS_ROOT}/benchmarks/shootout/* .
-
-#Patch shootout
+cp -r ${SIGHTGLASS_ROOT}/benchmarks/shootout_c/* .
 
 #Build shootout
 for cfile in ./*.c; do

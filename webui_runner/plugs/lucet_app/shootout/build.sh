@@ -19,19 +19,19 @@ LUCET_BINDINGS="${SIGHTGLASS_ROOT}/plugs/lucet_app/build/lucet/lucet-wasi/bindin
 
 #Prepare shootout
 mkdir -p ${SCRIPT_LOC}/benchmark; cd ${SCRIPT_LOC}/benchmark
-cp -r ${SIGHTGLASS_ROOT}/benchmarks/shootout/* .
+cp -r ${SIGHTGLASS_ROOT}/benchmarks/shootout_wasm/* .
 
 
 #Build shootout
-for cfile in ./*.c; do
-    echo ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} -c $cfile -o $(basename -s .c "$cfile").wasm.o
-    ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} -c $cfile -o $(basename -s .c "$cfile").wasm.o
+for wasmfile in ./*.wasm; do
+    #echo ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} -c $cfile -o $(basename -s .c "$cfile").wasm.o
+    #${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} -c $cfile -o $(basename -s .c "$cfile").wasm.o
 
-    echo ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} $(basename -s .c "$cfile").wasm.o -o $(basename -s .c "$cfile").wasm  -nostartfiles
-    ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} $(basename -s .c "$cfile").wasm.o -o $(basename -s .c "$cfile").wasm -nostartfiles
+    #echo ${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} $(basename -s .c "$cfile").wasm.o -o $(basename -s .c "$cfile").wasm  -nostartfiles
+    #${WASM_CC} ${WASM_ENTRY} ${WASI_CFLAGS} ${WASI_NO_SUPPORT} ${COMMON_CFLAGS} $(basename -s .c "$cfile").wasm.o -o $(basename -s .c "$cfile").wasm -nostartfiles
 
-	echo ${LUCETC} $(basename -s .c "$cfile").wasm -o $(basename -s .c "$cfile").wasm.so
-	${LUCETC} $(basename -s .c "$cfile").wasm -o $(basename -s .c "$cfile").wasm.so
+	echo ${LUCETC} $(basename -s .wasm "$wasmfile").wasm -o $(basename -s .wasm "$wasmfile").wasm.so
+	${LUCETC} $(basename -s .wasm "$wasmfile").wasm -o $(basename -s .wasm "$wasmfile").wasm.so
 done
 
 #Build implementation.so

@@ -93,9 +93,9 @@ def build_dics():
             global PERF_TEST;
             PERF_TEST = True;
             if vm != "base_native" and not args.skip_downloads:
-                if not 'wasi_libc' in download:
-                    print ("Adding wasi_libc to vm download list.");
-                    download['wasi_libc'] = os.path.join(CWD, "plugs/wasi_libc/download.sh");
+            #    if not 'wasi_libc' in download:
+            #        print ("Adding wasi_libc to vm download list.");
+            #        download['wasi_libc'] = os.path.join(CWD, "plugs/wasi_libc/download.sh");
                 print ("Adding {} to vm download list.".format(vm));
                 download[vm] = vm_download_path;
 

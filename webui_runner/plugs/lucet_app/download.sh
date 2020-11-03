@@ -17,4 +17,4 @@ git submodule foreach --recursive git submodule update
 git pull
 
 >&2 echo "lucet_app build"
-make install
+WASI_SYSROOT=${WASI_SYSROOT} make install
