@@ -18,7 +18,7 @@
     "chart.js": "^2.8.0",
     "dayjs": "^1.8.14",
     "numeral": "^2.0.6",
-    "nuxt": "^2.8.0",
+    "nuxt": "^2.14.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
     "vue-chartkick": "^0.5.1",

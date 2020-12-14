@@ -60,5 +60,16 @@ module.exports = {
    */
   env: {
     HISTORY_URL: process.env.HISTORY_URL || 'http://localhost:8001/history',
+  },
+
+  /*
+  ** Update when static build is to be served under a non-root directory.
+  */
+  router: {
+    base: '/'
+  },
+
+  static: {
+    prefix: false
   }
 };

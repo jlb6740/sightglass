@@ -13,6 +13,7 @@
   import SGCommits from "~/components/SGCommits.vue";
   import axios from "axios";
   import {extract_benchmarks, extract_runtimes, extract_suites, fixup_unix_timestamps} from "../js/retrieval";
+  import public_history from "~/public/history.json";
 
   let host_history = process.env.HISTORY_URL;
   if (!host_history) {
@@ -28,6 +29,13 @@
       SGCommits
     },
     created() {
+      if (process.target == "static") {
+         this.loading = false;
+          this.history = fixup_unix_timestamps(public_history.history);
+          this.benchmarks = extract_benchmarks(this.history);
+          this.suites = extract_suites(this.history);
+          this.runtimes = extract_runtimes(this.history);
+      } else {
       axios
         .get(host_history)
         .then(response => {
@@ -42,6 +50,7 @@
           console.error(e);
           this.errors.push(e);
         });
+      }
     },
     data() {
       return {
