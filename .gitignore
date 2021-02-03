@@ -2,6 +2,8 @@
 **/*~
 /target/
 /webui/sg-history/target/
+/webui/sg-history/public/history.json
+/webui/sg-history/dist/*
 benchmarks/**/*.ll
 benchmarks/**/*.o
 webui_runner/*-latest.toml
@@ -9,7 +11,7 @@ webui_runner/plugs/**/benchmark/
 webui_runner/plugs/**/bin/
 webui_runner/plugs/**/build/
 webui_runner/results/*
-webui/history.json
+
 
 !webui_runner/results/shootout.html
 !webui_runner/results/polybench.html
