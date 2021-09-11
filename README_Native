@@ -1,0 +1,1 @@
+LD_LIBRARY_PATH=/home/jlbirch/sightglass_jlb6740/engines/native/libengine/target/debug/  RUST_LOG=trace cargo run -- benchmark benchmarks-next/shootout-fib2/benchmark.wasm --engine engines/native/libengine/target/debug/libnative_bench_api.so  --processes=1 --iterations-per-process=1
