@@ -134,11 +134,13 @@ impl FromStr for EngineRef {
 /// Enumerates the engines known to sightglass.
 #[derive(Clone, Debug)]
 pub enum WellKnownEngine {
+    Native,
     Wasmtime,
 }
 impl fmt::Display for WellKnownEngine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            Self::Native => "native",
             Self::Wasmtime => "wasmtime",
         };
         write!(f, "{}", s)
@@ -148,6 +150,7 @@ impl FromStr for WellKnownEngine {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "native" => Ok(Self::Native),
             "wasmtime" => Ok(Self::Wasmtime),
             _ => Err(anyhow!("unable to parse an unknown engine: {}", s)),
         }

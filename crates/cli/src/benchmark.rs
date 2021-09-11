@@ -186,7 +186,7 @@ impl BenchmarkCommand {
                         &mut measurements,
                     )?;
 
-                    self.check_output(Path::new(wasm_file), stdout, stderr)?;
+                    //self.check_output(Path::new(wasm_file), stdout, stderr)?;
                     measurements.next_iteration();
                 }
 
