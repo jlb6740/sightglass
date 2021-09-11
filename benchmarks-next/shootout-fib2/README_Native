@@ -1,0 +1,1 @@
+clang -fPIC -I. -L/home/jlbirch/sightglass_jlb6740/engines/native/libengine/target/debug  -DNATIVE_ENGINE -shared -o implementation.so benchmark.c -lnative_bench_api

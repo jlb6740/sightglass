@@ -4,7 +4,11 @@
 #include "sightglass.h"
 #define BUFFER_SIZE 65536
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     // Initialize the hasher.
     blake3_hasher hasher;
