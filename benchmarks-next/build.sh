@@ -12,3 +12,11 @@ for DOCKERFILE in $(find $PROJECT_DIR/benchmarks-next -name Dockerfile); do
     # Build the Wasm benchmark.
     $SIGHTGLASS build-benchmark $DOCKERFILE -d $BENCH_DIR/benchmark.wasm --emit-wat
 done
+
+#for MAKEFILE in $(find $PROJECT_DIR/benchmarks-next -name Makefile); do
+#    CWD = $(cwd)
+#    DIR = $(dirname ${MAKEFILE})
+#    cd ${DIR}
+#    make
+#    cd ${CWD}
+#done
