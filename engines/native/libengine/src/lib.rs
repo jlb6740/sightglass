@@ -432,7 +432,7 @@ impl BenchState {
         // TODO .. Compile the code
         // set self.compile code to some path.
         //self.compiled_code_location = PathBuf
-        self.compiled_code_location = Some(PathBuf::from("bench_native.so"));
+        self.compiled_code_location = Some(PathBuf::from("./bench_native.so"));
         // if clang compilation fails we should return an error
         // When we compile this ... link in the sightglass recorder
         //Command::new("${CC} -fPIC ${COMMON_CFLAGS} "-DWORKLOAD_LOCATION=${SCRIPT_LOC}/benchmark" -shared -o implementation.so ../wrapper.c -fPIC")
