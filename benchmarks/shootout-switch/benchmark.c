@@ -9,7 +9,11 @@
 #define ITERATIONS 1000
 #define LENGTH 10000
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     size_t length = LENGTH;
 

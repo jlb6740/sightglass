@@ -222,7 +222,11 @@ hashseq_solve(HashSeqArena *arena, HashSeqSolution *solutions, const uint32_t su
     return 0;
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     void *buf = calloc(ARENA_SIZE, (size_t)1U);
     assert(buf != NULL);
