@@ -18,15 +18,17 @@ int ackermann(int M, int N)
     return ackermann(M - 1, ackermann(M, (N - 1)));
 }
 
-int read_int_from_file(char* path) {
-    char* buf [32] = { 0 };
+int read_int_from_file(char *path)
+{
+    char *buf[32] = {0};
 
     int fd = open(path, 0);
     assert(fd != -1);
 
     ssize_t n = 0;
-    do {
-        n += read(fd, (void*) &buf, sizeof(buf) - n - 1);
+    do
+    {
+        n += read(fd, (void *)&buf, sizeof(buf) - n - 1);
         assert(n >= 0);
     } while (n > 0);
     assert(close(fd) == 0);
@@ -35,7 +37,11 @@ int read_int_from_file(char* path) {
     return atoi(&buf);
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     int M = read_int_from_file("./default.m.input");
     int N = read_int_from_file("./default.n.input");

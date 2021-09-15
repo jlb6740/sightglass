@@ -10,12 +10,14 @@ gimli_core(uint32_t state[gimli_BLOCKBYTES / 4])
 {
     unsigned int round;
     unsigned int column;
-    uint32_t     x;
-    uint32_t     y;
-    uint32_t     z;
+    uint32_t x;
+    uint32_t y;
+    uint32_t z;
 
-    for (round = 24; round > 0; round--) {
-        for (column = 0; column < 4; column++) {
+    for (round = 24; round > 0; round--)
+    {
+        for (column = 0; column < 4; column++)
+        {
             x = ROTL32(state[column], 24);
             y = ROTL32(state[4 + column], 9);
             z = state[8 + column];
@@ -24,7 +26,8 @@ gimli_core(uint32_t state[gimli_BLOCKBYTES / 4])
             state[4 + column] = y ^ x ^ ((x | z) << 1);
             state[column] = z ^ y ^ ((x & y) << 3);
         }
-        switch (round & 3) {
+        switch (round & 3)
+        {
         case 0:
             x = state[0];
             state[0] = state[1];
@@ -45,14 +48,19 @@ gimli_core(uint32_t state[gimli_BLOCKBYTES / 4])
     }
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
-    uint32_t state[gimli_BLOCKBYTES / 4] = { 0 };
+    uint32_t state[gimli_BLOCKBYTES / 4] = {0};
     BLACK_BOX(state);
 
     bench_start();
     int i;
-    for (i = 0; i < ITERATIONS; i++) {
+    for (i = 0; i < ITERATIONS; i++)
+    {
         gimli_core(state);
     }
     bench_end();

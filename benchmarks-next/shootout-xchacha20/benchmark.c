@@ -194,7 +194,11 @@ xchacha20_xor(uint8_t *c, const uint8_t *m, size_t len, const uint8_t nonce[xcha
     return chacha20_xor(c, m, len, subnonce, subkey);
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     uint8_t *buf = calloc(BUF_SIZE, (size_t)1U);
     assert(buf != NULL);

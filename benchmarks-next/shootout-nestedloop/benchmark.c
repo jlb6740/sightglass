@@ -5,7 +5,11 @@
 
 #define LENGTH 30
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     int n = LENGTH;
     BLACK_BOX(n);
@@ -14,12 +18,18 @@ int main()
 
     printf("[nestedloop] running 6 nested loops with %d iterations each\n", n);
     bench_start();
-    for (a = 0; a < n; a++) {
-        for (b = 0; b < n; b++) {
-            for (c = 0; c < n; c++) {
-                for (d = 0; d < n; d++) {
-                    for (e = 0; e < n; e++) {
-                        for (f = 0; f < n; f++) {
+    for (a = 0; a < n; a++)
+    {
+        for (b = 0; b < n; b++)
+        {
+            for (c = 0; c < n; c++)
+            {
+                for (d = 0; d < n; d++)
+                {
+                    for (e = 0; e < n; e++)
+                    {
+                        for (f = 0; f < n; f++)
+                        {
                             x++;
                         }
                     }

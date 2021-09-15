@@ -6,7 +6,11 @@
 
 #define LENGTH 17000
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     static char flags[8192 + 1];
     unsigned long res;

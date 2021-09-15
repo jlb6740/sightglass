@@ -11,21 +11,23 @@
 #define MINICSV_QUOTE '"'
 
 static inline void
-_minicsv_out_col(char* const col_start, char** const cols, size_t* const cols_count_p,
-    const size_t cols_max)
+_minicsv_out_col(char *const col_start, char **const cols, size_t *const cols_count_p,
+                 const size_t cols_max)
 {
-    if (*cols_count_p < cols_max) {
+    if (*cols_count_p < cols_max)
+    {
         cols[*cols_count_p] = col_start;
     }
     (*cols_count_p)++;
 }
 
 static inline void
-_minicsv_parse_line_noquote(const int c, char** const pos_p, char** const col_start_p,
-    int* const state_p, char** const cols, size_t* const cols_count_p,
-    const size_t cols_max)
+_minicsv_parse_line_noquote(const int c, char **const pos_p, char **const col_start_p,
+                            int *const state_p, char **const cols, size_t *const cols_count_p,
+                            const size_t cols_max)
 {
-    switch (c) {
+    switch (c)
+    {
     case '\n':
         *state_p = 2;
     case MINICSV_DELIM:
@@ -35,7 +37,7 @@ _minicsv_parse_line_noquote(const int c, char** const pos_p, char** const col_st
         break;
     case MINICSV_QUOTE:
         *state_p = 1;
-        *col_start_p = ++ * pos_p;
+        *col_start_p = ++*pos_p;
         break;
     case '\r':
         **pos_p = 0;
@@ -45,13 +47,16 @@ _minicsv_parse_line_noquote(const int c, char** const pos_p, char** const col_st
 }
 
 static inline void
-_minicsv_parse_line_quote(const int c, char** const pos_p, int* const state_p)
+_minicsv_parse_line_quote(const int c, char **const pos_p, int *const state_p)
 {
-    if (c == MINICSV_QUOTE) {
-        if (*(*pos_p + 1U) == MINICSV_QUOTE) {
+    if (c == MINICSV_QUOTE)
+    {
+        if (*(*pos_p + 1U) == MINICSV_QUOTE)
+        {
             memmove(*pos_p, *pos_p + 1U, strlen(*pos_p));
         }
-        else {
+        else
+        {
             **pos_p = 0;
             *state_p = 0;
         }
@@ -59,18 +64,20 @@ _minicsv_parse_line_quote(const int c, char** const pos_p, int* const state_p)
     (*pos_p)++;
 }
 
-static char*
-minicsv_parse_line(char* const buf, char** const cols, size_t* const cols_count_p,
-    const size_t cols_max)
+static char *
+minicsv_parse_line(char *const buf, char **const cols, size_t *const cols_count_p,
+                   const size_t cols_max)
 {
-    char* col_start = buf;
-    char* pos = buf;
-    int   c;
-    int   state = 0;
+    char *col_start = buf;
+    char *pos = buf;
+    int c;
+    int state = 0;
 
     *cols_count_p = (size_t)0U;
-    while ((c = *pos) != 0) {
-        switch (state) {
+    while ((c = *pos) != 0)
+    {
+        switch (state)
+        {
         case 0:
             _minicsv_parse_line_noquote(c, &pos, &col_start, &state, cols, cols_count_p, cols_max);
             break;
@@ -81,53 +88,64 @@ minicsv_parse_line(char* const buf, char** const cols, size_t* const cols_count_
             return pos;
         }
     }
-    if (state == 0) {
+    if (state == 0)
+    {
         _minicsv_out_col(col_start, cols, cols_count_p, cols_max);
     }
     return pos;
 }
 
 static void
-minicsv_trim_cols(char** const cols, const size_t cols_count)
+minicsv_trim_cols(char **const cols, const size_t cols_count)
 {
-    char* col;
+    char *col;
     size_t col_end;
     size_t i = (size_t)0U;
 
-    while (i < cols_count) {
+    while (i < cols_count)
+    {
         col = cols[i];
-        while (*col != 0 && isspace((int)(unsigned char)*col)) {
+        while (*col != 0 && isspace((int)(unsigned char)*col))
+        {
             cols[i] = ++col;
         }
         col_end = strlen(col);
-        while (col_end > (size_t) 0U && isspace((int)(unsigned char)col[--col_end])) {
+        while (col_end > (size_t)0U && isspace((int)(unsigned char)col[--col_end]))
+        {
             col[col_end] = 0;
         }
         i++;
     }
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
-    char* cols[10];
+    char *cols[10];
     size_t cols_count;
-    int    i;
+    int i;
 
     bench_start();
-    for (i = 0; i < ITERATIONS; i++) {
+    for (i = 0; i < ITERATIONS; i++)
+    {
         char buf[] =
             "first,line,has,\"comas,\"\"escaped\"\" characters\",and,\"multiples\r\nlines\"\r\n"
             "second,line,\"  has  \",,empty,,,,columns\r\nremainder";
-        char* r = buf;
+        char *r = buf;
         BLACK_BOX(buf);
         r = minicsv_parse_line(r, cols, &cols_count, sizeof cols / sizeof cols[0]);
-        if (cols_count > sizeof cols / sizeof cols[0]) {
+        if (cols_count > sizeof cols / sizeof cols[0])
+        {
             abort();
         }
         minicsv_trim_cols(cols, cols_count);
         BLACK_BOX(cols);
         r = minicsv_parse_line(r, cols, &cols_count, sizeof cols / sizeof cols[0]);
-        if (cols_count > sizeof cols / sizeof cols[0]) {
+        if (cols_count > sizeof cols / sizeof cols[0])
+        {
             abort();
         }
         minicsv_trim_cols(cols, cols_count);
