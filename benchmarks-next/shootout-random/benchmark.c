@@ -15,7 +15,11 @@ gen_random(double max, long ia, long ic, long im)
     return max * last / im;
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     long ia = IA;
     long ic = IC;
@@ -25,7 +29,8 @@ int main()
 
     printf("[random] generating random number in %d iterations\n", n);
     bench_start();
-    while (n--) {
+    while (n--)
+    {
         gen_random(100.0, ia, ic, im);
     }
     double res = gen_random(100.0, ia, ic, im);

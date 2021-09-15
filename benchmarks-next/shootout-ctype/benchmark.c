@@ -8,10 +8,14 @@
 #define STR_SIZE 50000
 #define ITERATIONS 1000
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     size_t str_size = STR_SIZE;
-    char* str = malloc(str_size);
+    char *str = malloc(str_size);
     assert(str != NULL);
     size_t ret = (size_t)0U;
     size_t j;

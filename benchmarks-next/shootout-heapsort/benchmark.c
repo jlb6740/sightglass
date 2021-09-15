@@ -18,21 +18,25 @@ gen_random(double max)
 }
 
 static void
-my_heapsort(int n, double* ra)
+my_heapsort(int n, double *ra)
 {
-    int    i, j;
-    int    ir = n;
-    int    l = (n >> 1) + 1;
+    int i, j;
+    int ir = n;
+    int l = (n >> 1) + 1;
     double rra;
 
-    for (;;) {
-        if (l > 1) {
+    for (;;)
+    {
+        if (l > 1)
+        {
             rra = ra[--l];
         }
-        else {
+        else
+        {
             rra = ra[ir];
             ra[ir] = ra[1];
-            if (--ir == 1) {
+            if (--ir == 1)
+            {
                 ra[1] = rra;
                 return;
             }
@@ -40,15 +44,19 @@ my_heapsort(int n, double* ra)
 
         i = l;
         j = l << 1;
-        while (j <= ir) {
-            if (j < ir && ra[j] < ra[j + 1]) {
+        while (j <= ir)
+        {
+            if (j < ir && ra[j] < ra[j + 1])
+            {
                 ++j;
             }
-            if (rra < ra[j]) {
+            if (rra < ra[j])
+            {
                 ra[i] = ra[j];
                 j += (i = j);
             }
-            else {
+            else
+            {
                 j = ir + 1;
             }
         }
@@ -56,18 +64,24 @@ my_heapsort(int n, double* ra)
     }
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     int n = LENGTH;
-    double* ary = calloc(n + 1, sizeof(double*));
+    double *ary = calloc(n + 1, sizeof(double *));
     double res;
 
     bench_start();
     int i, j;
-    for (i = 0; i < ITERATIONS; i++) {
+    for (i = 0; i < ITERATIONS; i++)
+    {
         BLACK_BOX(ary);
         BLACK_BOX(n);
-        for (j = 1; j <= n; j++) {
+        for (j = 1; j <= n; j++)
+        {
             ary[j] = gen_random(1.0);
         }
         my_heapsort(n, ary);

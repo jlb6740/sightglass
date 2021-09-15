@@ -134,7 +134,11 @@ ratelimiter_hit(RateLimiter *rate_limiter, const uint8_t ip[16], uint64_t peak)
     return ret;
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     RateLimiter *limiter = malloc(sizeof(RateLimiter));
     static uint8_t key[16] = {0};
