@@ -24,7 +24,7 @@ static int
 b64_byte_to_char(unsigned int x)
 {
     return (LT(x, 26) & (x + 'A')) | (GE(x, 26) & LT(x, 52) & (x + ('a' - 26))) |
-        (GE(x, 52) & LT(x, 62) & (x + ('0' - 52))) | (EQ(x, 62) & '+') | (EQ(x, 63) & '/');
+           (GE(x, 52) & LT(x, 62) & (x + ('0' - 52))) | (EQ(x, 62) & '+') | (EQ(x, 63) & '/');
 }
 
 static unsigned int
@@ -41,7 +41,7 @@ static int
 b64_byte_to_urlsafe_char(unsigned int x)
 {
     return (LT(x, 26) & (x + 'A')) | (GE(x, 26) & LT(x, 52) & (x + ('a' - 26))) |
-        (GE(x, 52) & LT(x, 62) & (x + ('0' - 52))) | (EQ(x, 62) & '-') | (EQ(x, 63) & '_');
+           (GE(x, 52) & LT(x, 62) & (x + ('0' - 52))) | (EQ(x, 62) & '-') | (EQ(x, 63) & '_');
 }
 
 static unsigned int
@@ -75,9 +75,9 @@ base64_encoded_len(const size_t bin_len, const int variant)
     return base64_ENCODED_LEN(bin_len, variant);
 }
 
-static char*
-bin2base64(char* const b64, const size_t b64_maxlen, const unsigned char* const bin,
-    const size_t bin_len, const int variant)
+static char *
+bin2base64(char *const b64, const size_t b64_maxlen, const unsigned char *const bin,
+           const size_t bin_len, const int variant)
 {
     size_t acc_len = (size_t)0;
     size_t b64_len;
@@ -155,8 +155,8 @@ bin2base64(char* const b64, const size_t b64_maxlen, const unsigned char* const 
 }
 
 static int
-_base642bin_skip_padding(const char* const b64, const size_t b64_len, size_t* const b64_pos_p,
-    const char* const ignore, size_t padding_len)
+_base642bin_skip_padding(const char *const b64, const size_t b64_len, size_t *const b64_pos_p,
+                         const char *const ignore, size_t padding_len)
 {
     int c;
 
@@ -183,9 +183,9 @@ _base642bin_skip_padding(const char* const b64, const size_t b64_len, size_t* co
 }
 
 static int
-base642bin(unsigned char* const bin, const size_t bin_maxlen, const char* const b64,
-    const size_t b64_len, const char* const ignore, size_t* const bin_len,
-    const char** const b64_end, const int variant)
+base642bin(unsigned char *const bin, const size_t bin_maxlen, const char *const b64,
+           const size_t b64_len, const char *const ignore, size_t *const bin_len,
+           const char **const b64_end, const int variant)
 {
     size_t acc_len = (size_t)0;
     size_t b64_pos = (size_t)0;
@@ -268,12 +268,16 @@ base642bin(unsigned char* const bin, const size_t bin_maxlen, const char* const 
     return ret;
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
     size_t len = 1000;
     size_t b64_len = base64_encoded_len(len, 1);
-    unsigned char* bin = calloc(len, 1);
-    char* b64 = malloc(b64_len);
+    unsigned char *bin = calloc(len, 1);
+    char *b64 = malloc(b64_len);
 
     BLACK_BOX(len);
 

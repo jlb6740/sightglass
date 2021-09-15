@@ -2212,14 +2212,19 @@ keccak_core(uint64_t state[keccak_BLOCKBYTES / 8])
     state[24] = Asu;
 }
 
+#ifdef NATIVE_ENGINE
+int native_entry()
+#else
 int main()
+#endif
 {
-    uint64_t state[keccak_BLOCKBYTES / 8] = { 0 };
+    uint64_t state[keccak_BLOCKBYTES / 8] = {0};
     BLACK_BOX(state);
 
     bench_start();
     int i;
-    for (i = 0; i < ITERATIONS; i++) {
+    for (i = 0; i < ITERATIONS; i++)
+    {
         keccak_core(state);
     }
     bench_end();
