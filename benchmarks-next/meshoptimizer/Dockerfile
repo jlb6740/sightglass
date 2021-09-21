@@ -15,6 +15,7 @@ RUN git clone https://github.com/jlb6740/meshoptimizer.git \
 # Second, compile the benchmark to Wasm.
 
 WORKDIR /usr/src/meshoptimizer
+#COPY benchmark.c .
 COPY sightglass.h .
 
 # Meshoptimizer is expected to be compiled with emscripten but that build
