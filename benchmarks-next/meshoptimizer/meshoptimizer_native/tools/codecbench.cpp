@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../sightglass.h"
+//#include "../sightglass.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -163,10 +163,17 @@ void benchFilters(size_t count, double& besto8, double& besto12, double& bestq12
 }
 
 #ifdef NATIVE_ENGINE
-int native_entry(int argc, char** argv)
+void *__gxx_personality_v0;
+extern "C" void native_entry();
+extern "C" void bench_start();
+extern "C" void bench_end();
+extern "C" void native_entry()
+{
+	meshopt_encodeIndexVersion(1);
+
+	bool verbose = false;
 #else
 int main(int argc, char** argv)
-#endif
 {
 	meshopt_encodeIndexVersion(1);
 
@@ -175,7 +182,7 @@ int main(int argc, char** argv)
 	for (int i = 1; i < argc; ++i)
 		if (strcmp(argv[i], "-v") == 0)
 			verbose = true;
-
+#endif
 	const int N = 1000;
 
 	std::vector<Vertex> vertices;
