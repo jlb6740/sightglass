@@ -142,8 +142,8 @@ vcachetuner: tools/vcachetuner.cpp $(BUILD)/tools/meshloader.cpp.o $(BUILD)/demo
 	$(CXX) $^ -fopenmp $(CXXFLAGS) -std=c++11 $(LDFLAGS) -o $@
 
 codecbench: tools/codecbench.cpp ${LIBRARY_SOURCES}
-	clang $^ -O3 -fPIC $(CXXFLAGS) -I. -L../../../engines/native/ -DNATIVE_ENGINE  -shared -o bench_native.so -l engine
-	mv bench_native.so ../../
+	clang $^ -O3 -fPIC $(CXXFLAGS) -I. -L../../../engines/native/ -DNATIVE_ENGINE  -shared -o bench_native.so -l engine -lstdc++
+	mv bench_native.so ../
 
 codecbench.js: tools/codecbench.cpp ${LIBRARY_SOURCES}
 	emcc $^ -O3 -g -DNDEBUG -s TOTAL_MEMORY=268435456 -s SINGLE_FILE=1 -o $@
