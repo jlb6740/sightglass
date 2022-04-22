@@ -89,7 +89,8 @@ impl<'a> Instruction<'a> {
             }
             Instruction::Arg(key, val) => {
                 if !context.env.0.contains_key(*key) {
-                    context.env.set(key.to_string(), val.to_string());
+                    let unquoted_val = enquote::unquote(val).unwrap_or_else(|_| val.to_string());
+                    context.env.set(key.to_string(), unquoted_val);
                     debug!("ARG {}={}", key, val);
                 } else {
                     debug!("ARG skipped, key {} exists", key);
@@ -216,30 +217,40 @@ pub fn parse(contents: &str) -> Result<Vec<Instruction>, DockerInterpretError> {
         let line = line.trim();
         if line.starts_with("#") {
             // Skip comments.
-        } else if let Some(("WORKDIR", dir)) = line.split_once(" ") {
-            instructions.push(Workdir(dir.trim()))
-        } else if let Some(("COPY", from_to)) = line.split_once(" ") {
-            if let Some((from, to)) = from_to.trim().split_once(" ") {
-                instructions.push(Copy(from.trim(), to.trim()))
-            } else {
-                return Err(BadParseCopy(from_to.to_string()));
-            }
-        } else if let Some(("RUN", command)) = line.split_once(" ") {
-            if command.trim().ends_with("\\") {
-                return Err(BadParseMultiline);
-            }
-            let pattern = Regex::new(r#"[\\""].+?[\\""]|[^ ]+"#)
-                .expect("this regex should not fail to compile");
-            let matches: Vec<&str> = pattern.find_iter(command).map(|m| m.as_str()).collect();
-            instructions.push(Run(matches))
-        } else if let Some(("ARG", key_var)) = line.split_once(" ") {
-            if let Some((key, var)) = key_var.trim().split_once("=") {
-                instructions.push(Arg(key.trim(), var.trim()))
-            } else {
-                return Err(BadParseArg(key_var.to_string()));
+            continue;
+        }
+
+        if let Some((command, rest)) = line.split_once(" ") {
+            let rest = rest.trim();
+            match command {
+                "WORKDIR" => instructions.push(Workdir(rest)),
+                "COPY" => {
+                    if let Some((from, to)) = rest.split_once(" ") {
+                        instructions.push(Copy(from.trim(), to.trim()))
+                    } else {
+                        return Err(BadParseCopy(rest.to_string()));
+                    }
+                }
+                "RUN" => {
+                    if rest.ends_with("\\") {
+                        return Err(BadParseMultiline);
+                    }
+                    let pattern = Regex::new(r#"[\\""].+?[\\""]|[^ ]+"#)
+                        .expect("this regex should not fail to compile");
+                    let matches: Vec<&str> = pattern.find_iter(rest).map(|m| m.as_str()).collect();
+                    instructions.push(Run(matches))
+                }
+                "ARG" | "ENV" => {
+                    if let Some((key, val)) = rest.split_once("=") {
+                        instructions.push(Arg(key.trim(), val.trim()))
+                    } else {
+                        return Err(BadParseArg(rest.to_string()));
+                    }
+                }
+                _ => { /* Skip unknown command. */ }
             }
         } else {
-            // Ignore other kinds of operations.
+            // Unknown line--no command.
         }
     }
 
