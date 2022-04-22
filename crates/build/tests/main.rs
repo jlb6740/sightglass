@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 use pretty_env_logger;
-use sightglass_artifact::{Artifact, Dockerfile, WasmBenchmark};
+use sightglass_artifact::{Artifact, DockerBuildArgs, Dockerfile, WasmBenchmark};
 use std::path::PathBuf;
 use std::{env, fs};
 
@@ -41,7 +41,9 @@ fn interpret_dockerfile() -> Result<()> {
     // Interpret a Dockerfile in a temp directory and extract a file.
     let dockerfile = Dockerfile::from(PathBuf::from("./tests/interpret-dockerfile/Dockerfile"));
     let source = PathBuf::from("/sequence.txt");
-    dockerfile.interpret(source, &destination, None)?;
+    let mut build_args = DockerBuildArgs::new();
+    build_args.set("OUTPUT", "sequence.txt");
+    dockerfile.interpret(source, &destination, Some(build_args))?;
 
     // Ensure the file has the right contents.
     let contents = fs::read_to_string(&destination)?;

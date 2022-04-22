@@ -6,7 +6,7 @@
 //! parsed from `Dockerfile`s and executed in a temporary directory on the system. Some effort has
 //! been made to match the semantics of the [Dockerfile reference], but complex `Dockerfile`s may
 //! run into issues like:
-//!  - Only the `RUN`, `WORKDIR`, `COPY`, and `ENV` operations are supported; any other `Dockerfile`
+//!  - Only the `RUN`, `WORKDIR`, `COPY`, and `ARG` operations are supported; any other `Dockerfile`
 //!    operations are ignored.
 //!  - The execution of these operations is not isolated/containerized! The commands will affect the
 //!    machine directly (some effort has been taken to constrain paths within the execution
@@ -23,31 +23,30 @@ use std::process::Command;
 use std::{fs, path};
 use thiserror::Error;
 
+use crate::DockerBuildArgs;
+
 /// List the instructions that this module can actually interpret.
 pub enum Instruction<'a> {
     Run(Vec<&'a str>),
     Workdir(&'a str),
     Copy(&'a str, &'a str),
-    Env(&'a str, &'a str),
+    Arg(&'a str, &'a str),
 }
 
 impl<'a> Instruction<'a> {
     /// Execute a single `Dockerfile` instruction with the given context.
-    pub fn execute(
-        &self,
-        dockerfile_dir: &Path,
-        base_dir: &Path,
-        mut current_dir: PathBuf,
-    ) -> anyhow::Result<PathBuf> {
+    pub fn execute(&self, context: &mut ExecContext) -> anyhow::Result<()> {
         match self {
             Instruction::Run(run) => {
                 // Replace any absolute paths.
-                let run = make_contextual_shell_command(run, &base_dir);
+                let run = make_contextual_shell_command(run, context.base_dir);
                 //let pretty = run.join(" ");
                 debug!("RUN {:?}", run);
 
                 let mut cmd = Command::new(&run[0]);
-                cmd.args(&run[1..]).current_dir(&current_dir);
+                cmd.args(&run[1..])
+                    .current_dir(&context.current_dir)
+                    .envs(context.env.0.iter().map(|(a, b)| (a.as_ref(), b.as_ref())));
                 let out = cmd.output().expect("failed to execute");
                 trace!("  stdout: {:?}", std::str::from_utf8(&out.stdout));
                 trace!("  stderr: {:?}", std::str::from_utf8(&out.stderr));
@@ -57,11 +56,12 @@ impl<'a> Instruction<'a> {
                 }
             }
             Instruction::Workdir(path) => {
-                current_dir = contextualize(base_dir, &current_dir, &PathBuf::from(path));
-                if !current_dir.is_dir() {
-                    fs::create_dir_all(&current_dir)?;
+                context.current_dir =
+                    contextualize(context.base_dir, &context.current_dir, &PathBuf::from(path));
+                if !context.current_dir.is_dir() {
+                    fs::create_dir_all(&context.current_dir)?;
                 }
-                debug!("WORKDIR {}", current_dir.display());
+                debug!("WORKDIR {}", context.current_dir.display());
             }
             Instruction::Copy(from, to) => {
                 let is_directory =
@@ -74,19 +74,37 @@ impl<'a> Instruction<'a> {
                     }
                 };
 
-                let from = as_copy_location(from, normalize(&dockerfile_dir.join(from)));
+                let from = as_copy_location(from, normalize(&context.dockerfile_dir.join(from)));
                 let to = as_copy_location(
                     to,
-                    normalize(&contextualize(base_dir, &current_dir, &PathBuf::from(to))),
+                    normalize(&contextualize(
+                        context.base_dir,
+                        &context.current_dir,
+                        &PathBuf::from(to),
+                    )),
                 );
 
                 debug!("COPY {:?} {:?}", from, to);
                 copy(from, to)?;
             }
-            Instruction::Env(..) => todo!(),
+            Instruction::Arg(key, val) => {
+                if !context.env.0.contains_key(*key) {
+                    context.env.set(key.to_string(), val.to_string());
+                    debug!("ARG {}={}", key, val);
+                } else {
+                    debug!("ARG skipped, key {} exists", key);
+                }
+            }
         }
-        Ok(current_dir)
+        Ok(())
     }
+}
+
+pub struct ExecContext<'a> {
+    pub(crate) dockerfile_dir: &'a Path,
+    pub(crate) base_dir: &'a Path,
+    pub(crate) current_dir: PathBuf,
+    pub(crate) env: DockerBuildArgs<'a>,
 }
 
 /// Contextualize `path`:
@@ -214,11 +232,11 @@ pub fn parse(contents: &str) -> Result<Vec<Instruction>, DockerInterpretError> {
                 .expect("this regex should not fail to compile");
             let matches: Vec<&str> = pattern.find_iter(command).map(|m| m.as_str()).collect();
             instructions.push(Run(matches))
-        } else if let Some(("ENV", key_var)) = line.split_once(" ") {
-            if let Some((key, var)) = key_var.trim().split_once(" ") {
-                instructions.push(Env(key.trim(), var.trim()))
+        } else if let Some(("ARG", key_var)) = line.split_once(" ") {
+            if let Some((key, var)) = key_var.trim().split_once("=") {
+                instructions.push(Arg(key.trim(), var.trim()))
             } else {
-                return Err(BadParseEnv(key_var.to_string()));
+                return Err(BadParseArg(key_var.to_string()));
             }
         } else {
             // Ignore other kinds of operations.
@@ -235,6 +253,6 @@ pub enum DockerInterpretError {
     BadParseCopy(String),
     #[error("RUN cannot execute multi-line commands")]
     BadParseMultiline,
-    #[error("ENV must have two parts, found: {0}")]
-    BadParseEnv(String),
+    #[error("ARG must have two parts, found: {0}")]
+    BadParseArg(String),
 }

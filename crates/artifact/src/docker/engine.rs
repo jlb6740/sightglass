@@ -41,7 +41,7 @@ pub fn build_image<P: AsRef<Path>>(
 }
 
 /// Container for the build arguments passed to `build`.
-pub struct DockerBuildArgs<'a>(HashMap<Cow<'a, str>, Cow<'a, str>>);
+pub struct DockerBuildArgs<'a>(pub(crate) HashMap<Cow<'a, str>, Cow<'a, str>>);
 
 impl<'a> DockerBuildArgs<'a> {
     pub fn new() -> Self {

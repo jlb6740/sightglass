@@ -3,10 +3,9 @@
 //!
 //! Use the `DOCKER` environment variable to change the binary to use for this; the default is
 //! `"docker"`.
-use crate::docker::interpret::contextualize;
-
 use super::engine::*;
 use super::interpret::parse;
+use crate::docker::interpret::{contextualize, ExecContext};
 use anyhow::{Context, Result};
 use log::{debug, info, warn};
 use std::fmt::Formatter;
@@ -73,19 +72,24 @@ impl Dockerfile {
         let dockerfile_contents =
             fs::read_to_string(&self.0).context("failed to read Dockerfile")?;
         let instructions = parse(&dockerfile_contents)?;
-
-        // Execute each recognized instruction in the container directory.
-        let mut cwd = container_dir.clone();
-        let dockerfile_dir = self
+        let dockerfile_dir = &self
             .parent_dir()
             .canonicalize()
-            .context("failed while canonicalizing Dockerfile directory")?;
+            .context("failed while canonicalizing the Dockerfile directory")?;
+
+        // Execute each recognized instruction in the container directory.
+        let mut ctx = ExecContext {
+            base_dir: &container_dir,
+            dockerfile_dir,
+            current_dir: container_dir.clone(),
+            env: args.unwrap_or(DockerBuildArgs::new()),
+        };
         for i in instructions {
-            cwd = i.execute(&dockerfile_dir, &container_dir, cwd)?;
+            i.execute(&mut ctx)?;
         }
 
         // Extract the `source` file to `destination`.
-        let source = contextualize(&container_dir, &cwd, source.as_ref());
+        let source = contextualize(&ctx.base_dir, &ctx.current_dir, source.as_ref());
         debug!(
             "Extracting: {} -> {}",
             source.display(),
