@@ -6,8 +6,8 @@
 //! parsed from `Dockerfile`s and executed in a temporary directory on the system. Some effort has
 //! been made to match the semantics of the [Dockerfile reference], but complex `Dockerfile`s may
 //! run into issues like:
-//!  - Only the `RUN`, `WORKDIR`, `COPY`, and `ARG` operations are supported; any other `Dockerfile`
-//!    operations are ignored.
+//!  - Only the `RUN`, `WORKDIR`, `COPY`/`ADD`, and `ARG`/`ENV` operations are supported; any other
+//!    `Dockerfile` operations are ignored.
 //!  - The execution of these operations is not isolated/containerized! The commands will affect the
 //!    machine directly (some effort has been taken to constrain paths within the execution
 //!    directory but this should not be relied upon).
@@ -66,23 +66,30 @@ impl<'a> Instruction<'a> {
             Instruction::Copy(from, to) => {
                 let is_directory =
                     |p: &str| p.trim().ends_with(path::MAIN_SEPARATOR) || p.trim() == ".";
-                let as_copy_location = |orig: &str, new: PathBuf| {
-                    if is_directory(orig) {
-                        CopyLocation::Dir(new)
+
+                let from = {
+                    let path = normalize(&context.dockerfile_dir.join(from));
+                    if is_directory(from) || path.is_dir() {
+                        CopyLocation::Dir(path)
                     } else {
-                        CopyLocation::File(new)
+                        CopyLocation::File(path)
                     }
                 };
 
-                let from = as_copy_location(from, normalize(&context.dockerfile_dir.join(from)));
-                let to = as_copy_location(
-                    to,
-                    normalize(&contextualize(
+                let to = {
+                    let path = normalize(&contextualize(
                         context.base_dir,
                         &context.current_dir,
                         &PathBuf::from(to),
-                    )),
-                );
+                    ));
+                    // Note that we can't copy from a directory to a file, so if `from` is a
+                    // directory, so should `to`.
+                    if is_directory(to) || from.is_dir() {
+                        CopyLocation::Dir(path)
+                    } else {
+                        CopyLocation::File(path)
+                    }
+                };
 
                 debug!("COPY {:?} {:?}", from, to);
                 copy(from, to)?;
@@ -205,6 +212,14 @@ enum CopyLocation {
     Dir(PathBuf),
     File(PathBuf),
 }
+impl CopyLocation {
+    fn is_dir(&self) -> bool {
+        match self {
+            CopyLocation::Dir(..) => true,
+            _ => false,
+        }
+    }
+}
 
 /// Parse a `Dockerfile` into a sequence of [`Instruction`]s. Note that unknown operators will be
 /// silently ignored.
@@ -224,7 +239,7 @@ pub fn parse(contents: &str) -> Result<Vec<Instruction>, DockerInterpretError> {
             let rest = rest.trim();
             match command {
                 "WORKDIR" => instructions.push(Workdir(rest)),
-                "COPY" => {
+                "COPY" | "ADD" => {
                     if let Some((from, to)) = rest.split_once(" ") {
                         instructions.push(Copy(from.trim(), to.trim()))
                     } else {

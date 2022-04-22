@@ -17,7 +17,7 @@ pub fn get_built_engine(engine: &str) -> Result<PathBuf> {
 
     // If no file exists at the engine path, then we have to build it.
     if !engine_path.exists() {
-        build_engine(engine, &engine_path)?;
+        build_engine(engine, &engine_path, false)?;
         assert!(engine_path.exists());
     }
 
@@ -54,7 +54,7 @@ pub fn get_known_dockerfile_path(slug: &str) -> Result<PathBuf> {
 }
 
 /// Build an engine from either a Dockerfile or a known engine.
-pub fn build_engine(engine: &str, engine_path: &Path) -> Result<()> {
+pub fn build_engine(engine: &str, engine_path: &Path, no_docker: bool) -> Result<()> {
     // If the known engine's directory is not yet created, create it.
     let engine_dir = engine_path.parent().unwrap();
     if !engine_dir.is_dir() {
@@ -82,7 +82,12 @@ pub fn build_engine(engine: &str, engine_path: &Path) -> Result<()> {
     };
 
     log::debug!("Using Dockerfile at path: {}", dockerfile);
-    dockerfile.extract(format!("/{}", get_engine_filename()), engine_path, args)?;
+    let container_engine_path = format!("/{}", get_engine_filename());
+    if no_docker {
+        dockerfile.interpret(container_engine_path, engine_path, args)?;
+    } else {
+        dockerfile.extract(container_engine_path, engine_path, args)?;
+    }
     Ok(())
 }
 

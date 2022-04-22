@@ -214,10 +214,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tar_directory_will_materialize_symlinks() {
+    fn materialize_symlinks() {
         use std::path::Path;
         use tar::Archive;
-        let bytes = tar_dir("./tests").unwrap();
+        let bytes = tar_dir("./tests/check-symlink-use").unwrap();
         let mut archive = Archive::new(&bytes[..]);
         let linked_file = archive
             .entries()
