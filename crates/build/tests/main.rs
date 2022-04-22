@@ -1,9 +1,9 @@
 use anyhow::Result;
 use log::info;
 use pretty_env_logger;
-use sightglass_build::{Artifact, Dockerfile, WasmBenchmark};
-use std::env;
+use sightglass_artifact::{Artifact, Dockerfile, WasmBenchmark};
 use std::path::PathBuf;
+use std::{env, fs};
 
 // This example tests the crate functionality from end to end.
 #[test]
@@ -33,11 +33,19 @@ fn build_benchmark_with_emcc() -> Result<()> {
 fn interpret_dockerfile() -> Result<()> {
     pretty_env_logger::init();
 
+    let destination = env::temp_dir().join("sequence.txt");
+    if destination.exists() {
+        let _ = fs::remove_file(&destination);
+    }
+
     // Interpret a Dockerfile in a temp directory and extract a file.
     let dockerfile = Dockerfile::from(PathBuf::from("./tests/interpret-dockerfile/Dockerfile"));
-    let source = PathBuf::from("/example.txt");
-    let destination = env::temp_dir().join("example.txt");
-    dockerfile.interpret(source, destination, None)?;
+    let source = PathBuf::from("/sequence.txt");
+    dockerfile.interpret(source, &destination, None)?;
+
+    // Ensure the file has the right contents.
+    let contents = fs::read_to_string(&destination)?;
+    assert_eq!(contents, "1 2 3 4 5 6 7\n");
 
     Ok(())
 }
