@@ -17,6 +17,12 @@ pub struct BuildBenchmarkCommand {
     #[structopt(long, short = "w")]
     emit_wat: bool,
 
+    /// When enabled, use experimental support to build the benchmark directly on a machine using the
+    /// `Dockerfile` as a guide. WARNING: this feature is experimental and provides no
+    /// Docker-related isolation!
+    #[structopt(long, short)]
+    experimental_no_docker: bool,
+
     /// The path to a Dockerfile that will build a WebAssembly benchmark module.
     #[structopt(
         index = 1,
@@ -35,7 +41,11 @@ impl BuildBenchmarkCommand {
             Some(p) => p,
         };
 
-        dockerfile.extract(WasmBenchmark::source(), &destination, None)?;
+        if self.experimental_no_docker {
+            dockerfile.interpret(WasmBenchmark::source(), &destination, None)?;
+        } else {
+            dockerfile.extract(WasmBenchmark::source(), &destination, None)?;
+        }
         let wasmfile = WasmBenchmark::from(destination);
         if self.emit_wat {
             wasmfile.emit_wat()?;
