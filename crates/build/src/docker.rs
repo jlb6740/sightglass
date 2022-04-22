@@ -3,9 +3,10 @@
 //!
 //! Use the `DOCKER` environment variable to change the binary to use for this; the default is
 //! `"docker"`.
-use log::{debug, error, info};
-use std::path::Path;
-use std::process::{Command, Stdio};
+use log::{debug, error, info, warn};
+use regex::Regex;
+use std::path::{self, Path};
+use std::process::{self, Command, Stdio};
 use std::string::FromUtf8Error;
 use std::{
     borrow::Cow,
@@ -55,6 +56,38 @@ impl Dockerfile {
         remove_container(&container_id)?;
         remove_image(&image_id)?;
         assert!(destination.as_ref().exists());
+        Ok(())
+    }
+
+    ///
+    pub fn interpret<P1: AsRef<Path>, P2: AsRef<Path>>(
+        &self,
+        source: P1,
+        destination: P2,
+        args: Option<DockerBuildArgs>,
+    ) -> Result<()> {
+        warn!(
+            "Building Dockerfile outside of docker: {}",
+            self.0.display()
+        );
+
+        // Create the directory within which to run the Dockerfile. Note that there is no real
+        // isolation or protection of any kind: we simply run the Dockerfile as a script in this
+        // directory.
+        let container_dir = env::temp_dir().join(format!("sightglass-no-docker-{}", process::id()));
+        fs::create_dir(&container_dir).unwrap();
+
+        // Parse the Dockerfile.
+        let dockerfile_contents = fs::read_to_string(&self.0)?;
+        let instructions = parse(&dockerfile_contents)?;
+
+        // Execute each recognized instruction in the container directory.
+        let mut cwd = container_dir.clone();
+        let dockerfile_dir = self.parent_dir().canonicalize().unwrap();
+        for i in instructions {
+            cwd = i.execute(&dockerfile_dir, &container_dir, cwd)?;
+        }
+
         Ok(())
     }
 }
@@ -215,6 +248,8 @@ pub enum DockerError {
     FailedExecution(String),
     #[error("failed to parse an ID")]
     FailedParsingId(#[from] FromUtf8Error),
+    #[error("failed to parse Dockerfile: {0}")]
+    FailedParsingFile(String),
 }
 
 pub type ImageId = DockerId;
@@ -265,6 +300,126 @@ fn tar_dir<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
         builder.finish()?;
     }
     Ok(bytes)
+}
+
+fn parse(contents: &str) -> Result<Vec<Instruction>> {
+    use Instruction::*;
+    let mut instructions = Vec::new();
+    // let multiline_accumulator = None;
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.starts_with("#") {
+            // Skip comments.
+        } else if let Some(("WORKDIR", dir)) = line.split_once(" ") {
+            instructions.push(Workdir(dir.trim()))
+        } else if let Some(("COPY", from_to)) = line.split_once(" ") {
+            if let Some((from, to)) = from_to.trim().split_once(" ") {
+                instructions.push(Copy(from.trim(), to.trim()))
+            } else {
+                let message = format!("COPY is limited to two parts, found: {}", from_to);
+                return Err(DockerError::FailedParsingFile(message));
+            }
+        } else if let Some(("RUN", command)) = line.split_once(" ") {
+            let pattern = Regex::new(r#"[\\""].+?[\\""]|[^ ]+"#).unwrap();
+            let matches: Vec<&str> = pattern.find_iter(command).map(|m| m.as_str()).collect();
+            instructions.push(Run(matches))
+        } else if let Some(("ENV", key_var)) = line.split_once(" ") {
+            if let Some((key, var)) = key_var.trim().split_once(" ") {
+                instructions.push(Env(key.trim(), var.trim()))
+            } else {
+                let message = format!("ENV must have two parts, found: {}", key_var);
+                return Err(DockerError::FailedParsingFile(message));
+            }
+        } else {
+        }
+    }
+    Ok(instructions)
+}
+
+enum Instruction<'a> {
+    Run(Vec<&'a str>),
+    Workdir(&'a str),
+    Copy(&'a str, &'a str),
+    Env(&'a str, &'a str),
+}
+impl<'a> Instruction<'a> {
+    fn execute(
+        &self,
+        dockerfile_dir: &Path,
+        base_dir: &Path,
+        mut current_dir: PathBuf,
+    ) -> Result<PathBuf> {
+        let restrict = |base: &Path, current: &Path, add: &Path| {
+            if add.is_absolute() {
+                // TODO handle Windows
+                base.join(add.strip_prefix("/").unwrap())
+            } else {
+                current.join(add)
+            }
+        };
+        let normalize = |path: &Path| -> PathBuf {
+            let mut normalized = PathBuf::from("/");
+            for part in path.iter() {
+                match part.to_str().unwrap() {
+                    "." | "" => { /* Skip. */ }
+                    ".." => {
+                        let _ = normalized.pop();
+                    }
+                    p => normalized.push(p),
+                }
+            }
+            normalized
+        };
+
+        match self {
+            Instruction::Run(run) => {
+                let pretty = run.join(" ");
+                debug!("RUN {:?}", pretty);
+                let mut cmd = Command::new(&run[0]);
+                cmd.args(&run[1..]).current_dir(&current_dir);
+                let out = cmd.output().expect("failed to execute");
+                debug!("> stdout: {:?}", std::str::from_utf8(&out.stdout));
+                debug!("> stderr: {:?}", std::str::from_utf8(&out.stderr));
+                if !out.status.success() {
+                    return Err(DockerError::FailedExecution(format!(
+                        "Failed to run command: {}",
+                        pretty
+                    )));
+                }
+            }
+            Instruction::Workdir(path) => {
+                current_dir = restrict(base_dir, &current_dir, &PathBuf::from(path));
+                if !current_dir.is_dir() {
+                    fs::create_dir_all(&current_dir).unwrap();
+                }
+                debug!("WORKDIR {}", current_dir.display());
+            }
+            Instruction::Copy(from, to) => {
+                let from = dockerfile_dir.join(from);
+                let is_directory =
+                    |p: &str| p.trim().ends_with(path::MAIN_SEPARATOR) || p.trim() == ".";
+                let mut to_ = normalize(&restrict(base_dir, &current_dir, &PathBuf::from(to)));
+                let to = if is_directory(to) {
+                    if !to_.is_dir() {
+                        fs::create_dir_all(&to_).unwrap();
+                    }
+                    to_.push(from.file_name().unwrap());
+                    to_
+                } else {
+                    let parent = to_.parent().unwrap();
+                    if !parent.is_dir() {
+                        fs::create_dir_all(&to_).unwrap();
+                    }
+                    to_
+                };
+
+                debug!("COPY {} {}", from.display(), to.display());
+                fs::copy(from, to).unwrap();
+            }
+            Instruction::Env(..) => todo!(),
+        }
+        Ok(current_dir)
+    }
 }
 
 #[cfg(test)]

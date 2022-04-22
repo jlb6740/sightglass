@@ -10,6 +10,7 @@ anyhow = "1.0"
 blake3 = "0.3"
 dirs = "3.0"
 log = "0.4"
+regex = "1.5"
 serde = { version = "1.0.118", features = ["derive"] }
 tar = "0.4"
 thiserror = "1.0"
