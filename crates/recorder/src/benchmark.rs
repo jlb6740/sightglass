@@ -20,9 +20,15 @@ pub fn benchmark<'a, 'b, 'c>(
     stdin_path: Option<&Path>,
     wasm_bytes: &[u8],
     stop_after_phase: Option<Phase>,
+    execution_flags: Option<&str>,
     measure: &'a mut impl Measure,
     measurements: &'a mut Measurements<'c>,
 ) -> Result<()> {
+    #[cfg(target_os = "linux")]
+    info!("Benchmark scheduled on CPU: {}", unsafe {
+        libc::sched_getcpu()
+    });
+
     let engine = Engine::new(
         bench_api,
         working_dir,
@@ -31,6 +37,7 @@ pub fn benchmark<'a, 'b, 'c>(
         stdin_path,
         measurements,
         measure,
+        execution_flags,
     );
 
     // Measure the module compilation.
