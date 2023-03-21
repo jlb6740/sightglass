@@ -387,18 +387,18 @@ static mut NATIVE_EXECUTION_END: Option<extern "C" fn(*mut u8)> = None;
 
 #[no_mangle]
 pub extern "C" fn bench_start() {
-    println!("About to call native bench start");
+    //println!("About to call native bench start");
     let timer = unsafe { NATIVE_EXECUTION_TIMER.unwrap() };
     unsafe { NATIVE_EXECUTION_START.unwrap()(timer) };
-    println!("Done call native bench start.");
+    //println!("Done call native bench start.");
 }
 
 #[no_mangle]
 pub extern "C" fn bench_end() {
-    println!("About to call native bench end.");
+    //println!("About to call native bench end.");
     let timer = unsafe { NATIVE_EXECUTION_TIMER.unwrap() };
     unsafe { NATIVE_EXECUTION_END.unwrap()(timer) };
-    println!("Done call native bench end");
+    //println!("Done call native bench end");
 }
 
 impl BenchState {
@@ -465,7 +465,7 @@ impl BenchState {
             unsafe { native_compiled_code_lib.get(b"native_entry").unwrap() };
 
         let result = unsafe { (native_entry)() };
-        println!("Result {:?}", result);
+        //println!("Result {:?}", result);
         Ok(())
         // TODO Error checking .. if result is not zero maybe?
         // Replace with a system call to run the executable at compiled code location
